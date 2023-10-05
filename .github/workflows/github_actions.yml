@@ -41,7 +41,6 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-11, macos-13-xlarge ]
-
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -160,7 +159,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-11, ubuntu-latest ]
+        os: [ macos-11, ubuntu-latest, macos-13-xlarge]
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -175,10 +174,17 @@ jobs:
             docker run -e "CFLAGS=$CFLAGS" -e "CPPFLAGS=$CPPFLAGS" -v $(pwd):/TileDB-Java -t lib_builder_2010 /TileDB-Java/ci/build.sh
             cp ./build/tiledb_jni/*.so ./build/install/lib/*.so ./build/install/lib64/*.so binaries_$RUNNER_OS/
           fi
-
-          if [[ ( "$RUNNER_OS" == "macOS" ) ]]; then
-            ./gradlew -PTILEDB_AZURE=ON assemble
-            cp ./build/tiledb_jni/*.dylib ./build/install/lib/*.dylib binaries_$RUNNER_OS/
+          
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            if [[ "$(uname -m)" == "arm64" ]]; then
+              echo "ARM Mac";
+              mkdir binaries_$RUNNER_OS/arm
+              ./gradlew -PTILEDB_AZURE=ON assemble
+              cp ./build/tiledb_jni/arm/*.dylib ./build/install/arm/lib/*.dylib binaries_$RUNNER_OS/arm
+            else
+              ./gradlew -PTILEDB_AZURE=ON assemble
+              cp ./build/tiledb_jni/*.dylib ./build/install/lib/*.dylib binaries_$RUNNER_OS/
+            fi
           fi
 
         name: 'Build and Upload (Ubuntu and OSX)'
@@ -242,8 +248,10 @@ jobs:
           mv Upload-*/* .
 
           mkdir -p ./build/install/lib
+          mkdir .build/install/arm/lib
           mkdir ./build/install/lib64
           mkdir ./build/tiledb_jni/
+          mkdir ./build/tiledb_jni/arm
           mkdir ./build/tiledb_jni/Release
           mkdir ./build/install/bin
 
@@ -258,6 +266,8 @@ jobs:
           # OSX
           mv libtiledb.dylib ./build/install/lib
           mv libtiledbjni.dylib ./build/tiledb_jni
+          mv arm/libtiledb.dylib .build/install/arm/lib
+          mv arm/libtiledbjni.dylib .build/tiledb_jni/arm
 
           # Linux
           cp libtiledb.so ./build/install/lib

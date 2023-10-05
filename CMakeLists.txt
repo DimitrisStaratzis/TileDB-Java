@@ -65,7 +65,15 @@ if (TILEDB_JNI_SUPERBUILD)
   project(TileDB-JNI-Superbuild)
 
   # Path to install everything to, for embedding in the jar.
-  set(RESOURCE_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/install")
+  if (APPLE) # macOS
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+        set(RESOURCE_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/install")
+    else()
+            set(RESOURCE_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/install/arm")
+    endif()
+  else()
+        set(RESOURCE_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/install")
+  endif()
 
   message(STATUS "Starting TileDB-JNI superbuild.")
   include("cmake/TileDB-JNI-Superbuild.cmake")
